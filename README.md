@@ -40,3 +40,5 @@ restore-symbol ./xxx -o ./xxx_symbol -j block_sym.json
 https://github.com/poboke/Class-Decompile
 
 https://github.com/troyzhao/parse-crash-log
+
+https://github.com/tobefuturer/restore-symbol
