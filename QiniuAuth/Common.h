@@ -29,7 +29,8 @@ void DispatchSync(dispatch_queue_t _Nonnull queue , const void * _Nonnull key, d
 
 void DispatchAsync(dispatch_queue_t _Nonnull queue, const void * _Nonnull key, dispatch_block_t _Nonnull block);
 
-+ (void)TransportWithURLString:(NSString * _Nonnull)urlString Info:(NSDictionary * _Nullable)info IsSync:(BOOL)isSync CallBack:(void (^_Null_unspecified)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))callback;
++ (void)TransportWithURLString:(NSString * _Nonnull)urlString Info:(NSDictionary * _Nullable)info useQiniuAuth:(BOOL)useAuth IsSync:(BOOL)isSync CallBack:(void (^_Null_unspecified)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))callback;
+
 
 
 @end

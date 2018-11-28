@@ -10,10 +10,11 @@
 #import <CommonCrypto/CommonHMAC.h>
 #import "Common.h"
 
+#define ACCESS_KEY @"填写自己的公钥"
+#define SECRET_KEY @"填写自己的秘钥"
+
+
 @implementation Common
-
-
-
 
 
 void HookMethod(Class originalClass, SEL originalSelector, Class swizzledClass, SEL swizzledSelector) {
@@ -61,7 +62,7 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     }
 }
 
-+ (void)TransportWithURLString:(NSString *_Nonnull)urlString Info:(NSDictionary *_Nullable)info IsSync:(BOOL)isSync CallBack:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))callback{
++ (void)TransportWithURLString:(NSString *_Nonnull)urlString Info:(NSDictionary *_Nullable)info useQiniuAuth:(BOOL)useAuth IsSync:(BOOL)isSync CallBack:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))callback{
     
     dispatch_semaphore_t signal;
     
@@ -73,11 +74,22 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10.0];
     
-    NSData *postData = [NSJSONSerialization dataWithJSONObject:info options:NSJSONWritingPrettyPrinted error:NULL];
+    if (info) {
+        NSData *postData = [NSJSONSerialization dataWithJSONObject:info options:NSJSONWritingPrettyPrinted error:NULL];
+        request.HTTPBody = postData;
+        request.allHTTPHeaderFields = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"application/json",@"Content-Type", nil];
+    }
     
+    /*
+     依据实际需求自己更改 [HTTPMethod]，这里只是因为我这边项目服务端被某个人强行设置为 PUT 才允许接受
+     */
     request.HTTPMethod = @"PUT";
     
-    request.HTTPBody = postData;
+    
+    
+    if (useAuth){
+        [request qiniuAuthV2ByAccessKey:ACCESS_KEY AndSecretKey:SECRET_KEY];
+    }
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
        
@@ -156,6 +168,10 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
         [rawString appendFormat:@"?%@",self.URL.query];
     }
     [rawString appendFormat:@"\nHost: %@",self.URL.host];
+    
+    if (self.URL.port) {
+        [rawString appendFormat:@":%@",self.URL.port];
+    }
 
     NSString *contentType =  self.allHTTPHeaderFields[@"Content-Type"];
     if (contentType && ![contentType isEqualToString:@""]){
@@ -167,12 +183,6 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     if (self.HTTPBody && contentType && ([contentType isEqualToString:@"application/x-www-form-urlencoded"] || [contentType isEqualToString:@"application/json"])){
         
         NSMutableString *bodyString = [[NSMutableString alloc] initWithData:self.HTTPBody encoding:NSUTF8StringEncoding];
-        
-        NSRange cutSpaceRange = {0,bodyString.length};
-        [bodyString replaceOccurrencesOfString:@" " withString:@"" options:NSLiteralSearch range:cutSpaceRange];
-        
-        NSRange cutLineRange = {0,bodyString.length};
-        [bodyString replaceOccurrencesOfString:@"\n" withString:@"" options:NSLiteralSearch range:cutLineRange];
 
         [rawString appendString:bodyString];
         
