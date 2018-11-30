@@ -93,7 +93,9 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
        
-        callback(data,response,error);
+        if (callback) {
+            callback(data,response,error);
+        }
         
         if (isSync) {
             dispatch_semaphore_signal(signal);
@@ -144,8 +146,8 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
 
 - (NSString *)hmac_SHA1WithSecretKey:(NSString *)encryptKey {
     
-    const char *cKey = [encryptKey cStringUsingEncoding:NSASCIIStringEncoding];
-    const char *cData = [self cStringUsingEncoding:NSASCIIStringEncoding];
+    const char *cKey = [encryptKey cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *cData = [self cStringUsingEncoding:NSUTF8StringEncoding];
     unsigned char cHMAC[CC_SHA1_DIGEST_LENGTH];
     CCHmac(kCCHmacAlgSHA1, cKey, strlen(cKey), cData, strlen(cData), cHMAC);
     NSData *hash = [[NSData alloc] initWithBytes:cHMAC length:sizeof(cHMAC)];
