@@ -75,9 +75,10 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10.0];
     
     if (info) {
+        
         NSData *postData = [NSJSONSerialization dataWithJSONObject:info options:NSJSONWritingPrettyPrinted error:NULL];
         request.HTTPBody = postData;
-        request.allHTTPHeaderFields = [NSMutableDictionary dictionaryWithObjectsAndKeys:@"application/json",@"Content-Type", nil];
+        [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     }
     
     /*
@@ -92,10 +93,11 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     }
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-       
+        
         if (callback) {
             callback(data,response,error);
         }
+        
         
         if (isSync) {
             dispatch_semaphore_signal(signal);
@@ -150,11 +152,21 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     const char *cData = [self cStringUsingEncoding:NSUTF8StringEncoding];
     unsigned char cHMAC[CC_SHA1_DIGEST_LENGTH];
     CCHmac(kCCHmacAlgSHA1, cKey, strlen(cKey), cData, strlen(cData), cHMAC);
+    
     NSData *hash = [[NSData alloc] initWithBytes:cHMAC length:sizeof(cHMAC)];
     
     NSString *encodeSign = [[hash base64EncodedStringWithOptions:0] base64ToUrlSafe];
-
+    
     return encodeSign;
+}
+
+- (NSString *)timeStringConvertTodateString{
+    NSTimeInterval time=[self doubleValue];
+    NSDate *detailDate=[NSDate dateWithTimeIntervalSince1970:time];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
+    NSString *currentDateStr = [dateFormatter stringFromDate: detailDate];
+    return currentDateStr;
 }
 
 @end
@@ -163,9 +175,8 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
 @implementation NSMutableURLRequest (QiniuAuth)
 
 - (void)qiniuAuthV2ByAccessKey:(NSString *)accessKey AndSecretKey:(NSString *)secretKey {
-    
     NSMutableString *rawString = [NSMutableString stringWithFormat:@"%@ %@",self.HTTPMethod,self.URL.path];
-
+    
     if (self.URL.query && ![self.URL.query isEqualToString:@""]) {
         [rawString appendFormat:@"?%@",self.URL.query];
     }
@@ -174,8 +185,9 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     if (self.URL.port) {
         [rawString appendFormat:@":%@",self.URL.port];
     }
-
-    NSString *contentType =  self.allHTTPHeaderFields[@"Content-Type"];
+    
+    NSString *contentType =  [self valueForHTTPHeaderField:@"Content-Type"];
+    
     if (contentType && ![contentType isEqualToString:@""]){
         [rawString appendFormat:@"\nContent-Type: %@",contentType];
     }
@@ -185,16 +197,14 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     if (self.HTTPBody && contentType && ([contentType isEqualToString:@"application/x-www-form-urlencoded"] || [contentType isEqualToString:@"application/json"])){
         
         NSMutableString *bodyString = [[NSMutableString alloc] initWithData:self.HTTPBody encoding:NSUTF8StringEncoding];
-
+        
         [rawString appendString:bodyString];
         
     }
     
     NSString *encodeSign = [rawString hmac_SHA1WithSecretKey:secretKey];
     
-    NSMutableDictionary *headers =[NSMutableDictionary dictionaryWithDictionary:self.allHTTPHeaderFields];
-    [headers setObject:[NSString stringWithFormat:@"Qiniu %@:%@",accessKey,encodeSign] forKey:@"Authorization"];
-    self.allHTTPHeaderFields = headers;
+    [self setValue:[NSString stringWithFormat:@"Qiniu %@:%@",accessKey,encodeSign] forHTTPHeaderField:@"Authorization"];
     
 }
 
