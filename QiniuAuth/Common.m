@@ -89,7 +89,7 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     
     
     if (useAuth){
-        [request qiniuAuthV2ByAccessKey:ACCESS_KEY AndSecretKey:SECRET_KEY];
+        [request qiniuAuthV2ByTitle:nil AccessKey:ACCESS_KEY AndSecretKey:SECRET_KEY];
     }
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
@@ -174,7 +174,7 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
 
 @implementation NSMutableURLRequest (QiniuAuth)
 
-- (void)qiniuAuthV2ByAccessKey:(NSString *)accessKey AndSecretKey:(NSString *)secretKey {
+- (void)qiniuAuthV2ByTitle:(NSString *)title AccessKey:(NSString *)accessKey AndSecretKey:(NSString *)secretKey {
     NSMutableString *rawString = [NSMutableString stringWithFormat:@"%@ %@",self.HTTPMethod,self.URL.path];
     
     if (self.URL.query && ![self.URL.query isEqualToString:@""]) {
@@ -203,12 +203,55 @@ void DispatchAsync(dispatch_queue_t queue, const void *key, dispatch_block_t blo
     }
     
     NSString *encodeSign = [rawString hmac_SHA1WithSecretKey:secretKey];
+    if (!title) {
+        title = @"Qiniu";
+    }
     
-    [self setValue:[NSString stringWithFormat:@"Qiniu %@:%@",accessKey,encodeSign] forHTTPHeaderField:@"Authorization"];
+    [self setValue:[NSString stringWithFormat:@"%@ %@:%@",title,accessKey,encodeSign] forHTTPHeaderField:@"Authorization"];
     
 }
 
+
+- (void)qiniuAuthV1ByTitle:(NSString *)title AccessKey:(NSString *)accessKey AndSecretKey:(NSString *)secretKey {
+    
+    NSMutableString *rawString = [NSMutableString stringWithFormat:@"%@",self.URL.path];
+    
+    
+    if (self.URL.query && ![self.URL.query isEqualToString:@""]) {
+        [rawString appendFormat:@"?%@",self.URL.query];
+    }
+    [rawString appendString:@"\n"];
+    
+    NSString *contentType =  [self valueForHTTPHeaderField:@"Content-Type"];
+    if (self.HTTPBody && contentType && [contentType isEqualToString:@"application/x-www-form-urlencoded"]){
+        
+        NSMutableString *bodyString = [[NSMutableString alloc] initWithData:self.HTTPBody encoding:NSUTF8StringEncoding];
+        
+        [rawString appendString:bodyString];
+        
+    }
+    
+    NSString *encodeSign = [rawString hmac_SHA1WithSecretKey:secretKey];
+    
+    if (!title) {
+        title = @"QBox";
+    }
+    [self setValue:[NSString stringWithFormat:@"%@ %@:%@",title,accessKey,encodeSign] forHTTPHeaderField:@"Authorization"];
+    
+}
+
+
 @end
+
+
+
+
+
+
+
+
+
+
 
 
 
