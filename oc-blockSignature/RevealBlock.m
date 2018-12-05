@@ -91,6 +91,10 @@ static NSMethodSignature *aspect_blockMethodSignature(id block, NSError **error)
 
 @implementation RevealBlock
 +(NSString *)blockSignature:(id)block{
+    if (block == nil) {
+        return @"";
+    }
+    
     NSMethodSignature *blockSignature = aspect_blockMethodSignature(block, NULL);
 
     return getMethodSignatureTypeEncoding(blockSignature);
