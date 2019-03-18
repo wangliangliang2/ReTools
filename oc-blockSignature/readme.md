@@ -6,7 +6,7 @@
 
 取出签名后需要对比apple 的[Type Encodings](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html)文档。
 
-
+https://www.jianshu.com/p/1849068b7833
 
 
 
